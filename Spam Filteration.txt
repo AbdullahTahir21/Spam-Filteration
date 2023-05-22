@@ -1,0 +1,210 @@
+import csv
+import tkinter
+from tkinter import *
+from sklearn import feature_extraction
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.naive_bayes import  MultinomialNB
+from sklearn.preprocessing import normalize
+from sklearn.metrics import accuracy_score
+from functools import partial
+import pandas as p
+from sklearn import feature_extraction
+from csv import DictWriter
+import matplotlib.pyplot as plt
+
+BagOfWords = list()
+def dataDisplay():
+    data = p.read_csv("spam.csv", encoding='latin-1')
+    count_Class=p.value_counts(data["class"], sort= True)
+    count_Class.plot(kind= 'bar', color= ["blue", "orange"])
+    plt.ylabel('Emails')
+    plt.title('Bar chart')
+    plt.show()
+
+
+def DataProcessing():
+    data = p.read_csv("spam.csv", encoding='latin-1')
+  #  print(data['class'].value_counts(normalize=True))
+    # data.drop_duplicates(inplace= True)
+    data["email"].fillna("hello david how are you", inplace=True)
+    data["class"].fillna("ham", inplace=True)
+    x = data.iloc[:, 1]
+    x = x.str.replace("[^0-9a-zA-Z]", " ",regex=True)
+    x = x.str.replace("subject"," ")
+  #  print(x.to_string)
+    y = data["class"]
+    y = y.map({"spam": 1, "ham": 0})
+    features = feature_extraction.text.CountVectorizer(analyzer="word", stop_words="english", max_features=3000,
+                                                       min_df=0.0001)
+    x = features.fit_transform(x)
+
+    BagOfWords = features.get_feature_names_out()
+  #  print(BagOfWords)
+    return x, y, BagOfWords
+
+
+def writeNewEmailToCSV(label, email):
+    print("in this method")
+    newEntry =[]
+    newEntry.append(label)
+    newEntry.append(email)
+    print(newEntry[0],newEntry[1])
+
+
+    with open("spam.csv", mode="a" ,newline='') as file:
+        writer=csv.writer(file)
+        writer.writerow(newEntry)
+    # file.write(newEntry)
+        file.close()
+
+
+
+
+
+def testEmail(bagofWords, email):
+    email1 = email
+    email = [email]
+    features = feature_extraction.text.CountVectorizer(vocabulary=bagofWords)
+    email = features.fit_transform(email)
+    return email
+
+
+def TrainModel():
+        x , y , BagOfWords= DataProcessing()
+        X_train, X_test, y_train, y_test = train_test_split(x, y, test_size = 0.25, random_state = 45)
+        classifier = MultinomialNB(alpha=1)
+        classifier.fit(normalize(X_train), y_train)
+        y_pred = classifier.predict(X_test)
+        Accuracy = accuracy_score(y_test, y_pred)*100
+        return Accuracy, BagOfWords, classifier
+
+
+
+def TestEmail(BagOfWords,classifier, email):
+
+    email = testEmail(BagOfWords,email)
+    result = classifier.predict(email)
+    if result[0] == 1:
+        # dataProcessing.writeNewEmailToCSV("spam", email1)
+        return "email is spam","spam"
+    else:
+        # dataProcessing.writeNewEmailToCSV("ham", email1)
+        return "email is ham", "ham"
+
+dataDisplay()
+
+
+from tkinter import *
+from tkinter import messagebox
+
+w = Tk()
+w.geometry('350x500')
+w.title(' SPAM FILTERATION ')
+w.resizable(0, 0)
+
+# Making gradient frame
+j = 0
+r = 10
+for i in range(100):
+    c = str(222222 + r)
+    Frame(w, width=10, height=500, bg="#" + c).place(x=j, y=0)
+    j = j + 10
+    r = r + 1
+
+Frame(w, width=250, height=400, bg='white').place(x=50, y=50)
+
+l1 = Label(w, text='Enter Email to Check', bg='white')
+l = ('Consolas', 13)
+l1.config(font=l)
+l1.place(x=80, y=200)
+
+# e1 entry for username entry
+e1 = Entry(w, width=20, border=0)
+l = ('Consolas', 13)
+e1.config(font=l)
+e1.place(x=80, y=240)
+
+###lineframe on entry
+
+# Frame(w, width=180, height=2, bg='#141414').place(x=80, y=332)
+Frame(w, width=180, height=2, bg='#141414').place(x=80, y=260)
+
+
+
+# Command
+def train():
+    accuracy, BagOfWords, classifier = TrainModel()
+    messagebox.showinfo("A C C U R A C Y",accuracy)
+    # q = Tk()
+    # q.mainloop()
+    #print ham or spam
+    print("check")
+
+#accuracy
+def check():
+    accuracy, BagOfWords, classifier = TrainModel()
+    email = e1.get()
+    print(email)
+    result, label = TestEmail(BagOfWords, classifier, email)
+
+    messagebox.showinfo("T E S T  E M A I L", result)
+    writeNewEmailToCSV(label, email)
+
+
+# Button_with hover effect
+def btn1(x, y, text, ecolor, lcolor):
+    def on_entera(e):
+        myButton1['background'] = ecolor  # ffcc66
+        myButton1['foreground'] = lcolor  # 000d33
+
+    def on_leavea(e):
+        myButton1['background'] = lcolor
+        myButton1['foreground'] = ecolor
+
+    myButton1 = Button(w, text=text,
+                       width=20,
+                       height=2,
+                       fg=ecolor,
+                       border=0,
+                       bg=lcolor,
+                       activeforeground=lcolor,
+                       activebackground=ecolor,
+                       command=train)
+
+    myButton1.bind("<Enter>", on_entera)
+    myButton1.bind("<Leave>", on_leavea)
+
+    myButton1.place(x=x, y=y)
+
+
+btn1(100, 130, 'T R A I N', 'white', '#994422')
+
+# Button_with hover effect
+def btn2(x, y, text, ecolor, lcolor):
+    def on_entera(e):
+        myButton2['background'] = ecolor  # ffcc66
+        myButton2['foreground'] = lcolor  # 000d33
+
+    def on_leavea(e):
+        myButton2['background'] = lcolor
+        myButton2['foreground'] = ecolor
+
+    myButton2 = Button(w, text=text,
+                       width=20,
+                       height=2,
+                       fg=ecolor,
+                       border=0,
+                       bg=lcolor,
+                       activeforeground=lcolor,
+                       activebackground=ecolor,
+                       command=check)
+
+    myButton2.bind("<Enter>", on_entera)
+    myButton2.bind("<Leave>", on_leavea)
+
+    myButton2.place(x=x, y=y)
+
+btn2(100, 300, 'C H E C K', 'white', '#994422')
+w.mainloop()
+
